@@ -255,4 +255,12 @@ For issues, questions, or contributions:
 
 **🏛️ HeritageLens AI - Preserving Heritage Through Technology**
 
-Built with ❤️ for archaeologists, historians, and heritage enthusiasts worldwide.
+Built with ❤️ for archaeologists, historians, and heritage enthusiasts worldwide. 
+
+
+
+👨‍💻 Author
+
+Your Name
+GitHub: jhasu_622
+Email: jhasujamisetty@gmail.com
