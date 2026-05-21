@@ -16,7 +16,7 @@ A comprehensive Streamlit web application for detecting and analyzing heritage s
 - YouTube video link analysis
 - Real-time frame-by-frame detection
 - Start/stop detection controls
-- Comprehensive video summaries
+- Comprehensive video summaries 
 
 ### 📊 Interactive Dashboard
 - Detailed detection statistics
