@@ -9,7 +9,7 @@ from pathlib import Path
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.detection_utils import DetectionManager
+from detection_utils import DetectionManager
 from utils.ui_utils import create_detection_charts, create_summary_text, display_metrics, generate_pdf_report
 
 # Page configuration
