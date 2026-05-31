@@ -1,278 +1,188 @@
 import streamlit as st
-import os
+import cv2
+import numpy as np
+from PIL import Image
+import io
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.detection_utils import DetectionManager
-from utils.ui_utils import apply_custom_css
+from utils.ui_utils import create_detection_charts, create_summary_text, display_metrics, generate_pdf_report, apply_custom_css
 
 st.set_page_config(
-    page_title="HeritageLens AI",
-    page_icon="🏛️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Image Detection - HeritageLens AI",
+    page_icon="📸",
+    layout="wide"
 )
 
-# ── CSS ──────────────────────────────────────────────────────────────────────
+apply_custom_css()
+
 st.markdown("""
 <style>
-/* Hero banner */
-.hero-banner {
-    background: #3B2A1A;
-    border-radius: 12px;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    margin-bottom: 2rem;
-}
-.hero-banner h1 {
-    color: #F5E6C8;
-    font-size: 2.4rem;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-}
-.hero-banner p {
-    color: #C9A97A;
-    font-size: 1.1rem;
-}
-
-/* Info cards */
-.info-card {
-    background: #FFFDF9;
-    border: 1px solid #E8D8C0;
-    border-radius: 10px;
-    padding: 1.2rem 1.4rem;
-    margin-bottom: 1rem;
-    color: #2C1A0E;
-}
-.info-card h3, .info-card h4 {
-    color: #5C3A1E;
-    margin-bottom: 0.5rem;
-}
-.info-card p, .info-card li {
-    color: #3D2410;
-    line-height: 1.7;
-}
-
-/* Feature grid */
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-.feature-card {
-    background: #FFFDF9;
-    border: 1px solid #E8D8C0;
-    border-radius: 10px;
-    padding: 1.2rem;
-    text-align: center;
-}
-.feature-card .f-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-.feature-card h4 { color: #5C3A1E; margin-bottom: 0.3rem; font-size: 1rem; }
-.feature-card p  { color: #3D2410; font-size: 0.9rem; line-height: 1.5; }
-
-/* Heritage class rows */
-.class-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.8rem 0;
-    border-bottom: 1px solid #F0E0CC;
-}
-.class-row:last-child { border-bottom: none; }
-.class-icon { font-size: 1.8rem; width: 44px; text-align: center; }
-.class-name { color: #3B2A1A; font-weight: 600; font-size: 0.95rem; }
-.class-desc { color: #6B4C30; font-size: 0.85rem; margin-top: 2px; }
-
-/* Step list */
-.step-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.9rem;
-    padding: 0.6rem 0;
-}
-.step-num {
-    background: #3B2A1A;
-    color: #F5E6C8;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-.step-text strong { color: #3B2A1A; }
-.step-text span   { color: #6B4C30; font-size: 0.88rem; display: block; margin-top: 2px; }
-
-/* Section headings */
-.section-heading {
-    color: #3B2A1A;
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin: 1.8rem 0 0.8rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 2px solid #C9A97A;
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    color: #9B7B5B;
-    padding: 2rem 0 1rem;
-    font-size: 0.9rem;
-}
+.page-header { background: #3B2A1A; border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 1.5rem; }
+.page-header h1 { color: #F5E6C8; font-size: 2rem; font-weight: 600; margin-bottom: 0.3rem; }
+.page-header p  { color: #C9A97A; font-size: 1rem; }
+.info-card { background: #FFFDF9; border: 1px solid #E8D8C0; border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; color: #2C1A0E; }
+.info-card h4 { color: #5C3A1E; margin-bottom: 0.4rem; }
+.info-card p, .info-card li { color: #3D2410; line-height: 1.7; }
+.section-heading { color: #3B2A1A; font-size: 1.2rem; font-weight: 600; margin: 1.5rem 0 0.7rem; padding-bottom: 0.3rem; border-bottom: 2px solid #C9A97A; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Session state ─────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="page-header">
+    <h1>📸 Image Detection</h1>
+    <p>Upload images to detect heritage sites and archaeological structures</p>
+</div>
+""", unsafe_allow_html=True)
+
 if 'detection_manager' not in st.session_state:
+    st.session_state.detection_manager = DetectionManager()
+
+detection_manager = st.session_state.detection_manager
+
+if detection_manager.model is None:
+    st.error("❌ Model failed to load. Please check if the model file 'best.pt' exists.")
+    st.stop()
+
+st.markdown('<div class="section-heading">📁 Upload Images</div>', unsafe_allow_html=True)
+uploaded_files = st.file_uploader(
+    "Choose image files",
+    type=['png', 'jpg', 'jpeg', 'bmp', 'tiff'],
+    accept_multiple_files=True,
+    help="Upload one or more images to analyse for heritage objects"
+)
+
+def process_images(uploaded_files, detection_manager):
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    results = []
+    all_detections = []
+
+    for i, uploaded_file in enumerate(uploaded_files):
+        status_text.text(f"Processing image {i+1}/{len(uploaded_files)}: {uploaded_file.name}")
+        image = Image.open(uploaded_file)
+        image_array = np.array(image)
+        if len(image_array.shape) == 3:
+            image_cv = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        else:
+            image_cv = image_array
+        detections = detection_manager.detect_objects(image_cv)
+        if detections:
+            st.info(f"Found {len(detections)} objects in {uploaded_file.name}")
+        else:
+            st.warning(f"No objects detected in {uploaded_file.name}")
+        annotated_image = detection_manager.draw_detections(image_cv, detections)
+        annotated_image_rgb = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+        result = {
+            'filename': uploaded_file.name,
+            'original_image': image_array,
+            'annotated_image': annotated_image_rgb,
+            'detections': detections,
+            'image_cv': image_cv
+        }
+        results.append(result)
+        all_detections.extend(detections)
+        progress_bar.progress((i + 1) / len(uploaded_files))
+
+    st.session_state.image_results = results
+    st.session_state.image_detections = all_detections
+    stats = detection_manager.get_class_statistics([all_detections])
+    st.session_state.image_stats = stats
+    status_text.empty()
+    progress_bar.empty()
+    st.success(f"✅ Successfully analysed {len(uploaded_files)} image(s)!")
+
+def display_image_results():
+    results = st.session_state.image_results
+    stats = st.session_state.image_stats
+    detection_manager = st.session_state.detection_manager
+
+    st.markdown('<div class="section-heading">📊 Detection Results</div>', unsafe_allow_html=True)
+    display_metrics(stats)
+
+    summary_text = create_summary_text(stats)
+    st.markdown(f"""
+    <div class="info-card">
+        <h4>📝 Summary</h4>
+        <p>{summary_text}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-heading">📈 Visualisations</div>', unsafe_allow_html=True)
+    create_detection_charts(stats)
+
+    st.markdown('<div class="section-heading">🖼️ Detected Images</div>', unsafe_allow_html=True)
+    for i, result in enumerate(results):
+        with st.expander(f"📷 {result['filename']} — {len(result['detections'])} detections"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Original image**")
+                st.image(result['original_image'], use_column_width=True)
+            with col2:
+                st.markdown("**Detected objects**")
+                st.image(result['annotated_image'], use_column_width=True)
+
+            if result['detections']:
+                st.markdown("**Detection details**")
+                detection_data = []
+                for j, detection in enumerate(result['detections']):
+                    detection_data.append({
+                        'Object': j + 1,
+                        'Class': detection['class_name'],
+                        'Confidence': f"{detection['confidence']:.2%}",
+                        'Bounding Box': f"({detection['bbox'][0]:.0f}, {detection['bbox'][1]:.0f}, {detection['bbox'][2]:.0f}, {detection['bbox'][3]:.0f})"
+                    })
+                st.table(detection_data)
+
+                crops = detection_manager.crop_detections(result['image_cv'], result['detections'])
+                if crops:
+                    st.markdown("**Cropped detections**")
+                    cols = st.columns(min(len(crops), 4))
+                    for idx, crop in enumerate(crops):
+                        if idx < len(cols):
+                            with cols[idx]:
+                                crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+                                st.image(crop_rgb, caption=f"Detection {idx + 1}", use_column_width=True)
+
+    st.markdown('<div class="section-heading">💾 Download Results</div>', unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📄 Generate PDF Report"):
+            generate_pdf_download(stats, summary_text)
+    with col2:
+        if st.button("🔄 Clear Results"):
+            clear_image_results()
+
+def generate_pdf_download(stats, summary_text):
     try:
-        st.session_state.detection_manager = DetectionManager()
+        samples = []
+        if 'image_results' in st.session_state:
+            for res in st.session_state.image_results[:6]:
+                samples.append(res['annotated_image'])
+        pdf_data = generate_pdf_report(stats, summary_text, samples=samples)
+        st.download_button(
+            label="📥 Download PDF Report",
+            data=pdf_data,
+            file_name="heritage_detection_report.pdf",
+            mime="application/pdf"
+        )
+        st.success("PDF report generated successfully!")
     except Exception as e:
-        st.error("⚠️ Model file (best.pt) not found. Please add it to the project root.")
-        st.stop()
+        st.error(f"Error generating PDF report: {str(e)}")
 
-if 'detection_results' not in st.session_state:
-    st.session_state.detection_results = []
+def clear_image_results():
+    for key in ['image_results', 'image_detections', 'image_stats']:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.success("Results cleared!")
+    st.rerun()
 
-if 'video_detection_active' not in st.session_state:
-    st.session_state.video_detection_active = False
+if uploaded_files:
+    if st.button("🔍 Analyse Images", type="primary"):
+        process_images(uploaded_files, detection_manager)
 
-# ── Hero ──────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="hero-banner">
-    <h1>🏛️ HeritageLens AI</h1>
-    <p>Discover and preserve cultural heritage through deep learning</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Welcome ───────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-heading">🌟 Welcome</div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="info-card">
-    <p>HeritageLens AI uses <strong>YOLOv11</strong> deep learning to automatically detect and analyse
-    heritage sites, archaeological structures, and cultural landmarks in images and videos.
-    Whether you're an archaeologist, historian, or heritage enthusiast — our AI tool identifies
-    cultural heritage with high accuracy.</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Features ──────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-heading">🎯 Key features</div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="feature-grid">
-    <div class="feature-card">
-        <div class="f-icon">📸</div>
-        <h4>Image detection</h4>
-        <p>Upload photos and get bounding boxes with confidence scores instantly.</p>
-    </div>
-    <div class="feature-card">
-        <div class="f-icon">🎥</div>
-        <h4>Video analysis</h4>
-        <p>Analyse local videos or YouTube links with real-time frame detection.</p>
-    </div>
-    <div class="feature-card">
-        <div class="f-icon">📊</div>
-        <h4>Dashboard</h4>
-        <p>Interactive charts, class breakdowns, and downloadable PDF reports.</p>
-    </div>
-    <div class="feature-card">
-        <div class="f-icon">📚</div>
-        <h4>Learn</h4>
-        <p>Explore cultural significance, preservation tips, and AI explainers.</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Heritage classes ───────────────────────────────────────────────────────────
-st.markdown('<div class="section-heading">🏺 Heritage classes detected</div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="info-card">
-    <div class="class-row">
-        <div class="class-icon">🗿</div>
-        <div>
-            <div class="class-name">Stones / stone pillars / stone structures</div>
-            <div class="class-desc">Megaliths, temple pillars, ancient stone constructions and architectural elements</div>
-        </div>
-    </div>
-    <div class="class-row">
-        <div class="class-icon">🌾</div>
-        <div>
-            <div class="class-name">Crops / farmland</div>
-            <div class="class-desc">Agricultural landscapes, traditional farming areas and irrigation systems</div>
-        </div>
-    </div>
-    <div class="class-row">
-        <div class="class-icon">🏔️</div>
-        <div>
-            <div class="class-name">Non-archaeological</div>
-            <div class="class-desc">Natural formations — deserts, water bodies, mountains and geographical features</div>
-        </div>
-    </div>
-    <div class="class-row">
-        <div class="class-icon">🏛️</div>
-        <div>
-            <div class="class-name">Heritage sites</div>
-            <div class="class-desc">Temples, palaces, forts, museums and major cultural monuments</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Getting started ────────────────────────────────────────────────────────────
-st.markdown('<div class="section-heading">🚀 Getting started</div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="info-card">
-    <div class="step-item">
-        <div class="step-num">1</div>
-        <div class="step-text"><strong>Image Detection</strong>
-        <span>Navigate to the Image Detection page, upload your photos, and click Analyse.</span></div>
-    </div>
-    <div class="step-item">
-        <div class="step-num">2</div>
-        <div class="step-text"><strong>Video Detection</strong>
-        <span>Go to Video Detection, upload a local video file or paste a YouTube URL.</span></div>
-    </div>
-    <div class="step-item">
-        <div class="step-num">3</div>
-        <div class="step-text"><strong>Summary Dashboard</strong>
-        <span>View combined stats, interactive charts, and download a full PDF report.</span></div>
-    </div>
-    <div class="step-item">
-        <div class="step-num">4</div>
-        <div class="step-text"><strong>Learn About Heritage</strong>
-        <span>Explore each class's cultural significance and preservation best practices.</span></div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Technology ─────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-heading">🔬 Technology</div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="info-card">
-    <h4>Powered by YOLOv11</h4>
-    <p>Our custom-trained model is fine-tuned specifically for heritage sites and archaeological
-    structures. Key technologies include:</p>
-    <ul style="margin-top: 0.6rem; padding-left: 1.4rem;">
-        <li>YOLOv11 deep learning model</li>
-        <li>PyTorch + Ultralytics framework</li>
-        <li>OpenCV for image processing</li>
-        <li>Streamlit for the interactive UI</li>
-        <li>Plotly for data visualisation</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Footer ─────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="footer">
-    🏛️ HeritageLens AI — preserving heritage through technology<br>
-    Built with ❤️ for archaeologists, historians, and heritage enthusiasts worldwide
-</div>
-""", unsafe_allow_html=True)
+if 'image_results' in st.session_state and st.session_state.image_results:
+    display_image_results()
