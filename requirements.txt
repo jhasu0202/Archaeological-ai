@@ -9,3 +9,4 @@ reportlab
 matplotlib
 seaborn
 yt-dlp
+streamlit-option-menu
