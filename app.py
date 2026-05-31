@@ -3,14 +3,11 @@ import os
 import sys
 from pathlib import Path
 
-# Add the current directory to Python path
 sys.path.append(str(Path(__file__).parent))
 
-# ✅ FIXED: Files are in root, not inside utils/ folder
 from utils.detection_utils import DetectionManager
 from utils.ui_utils import apply_custom_css
 
-# Page configuration
 st.set_page_config(
     page_title="HeritageLens AI",
     page_icon="🏛️",
@@ -18,15 +15,127 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Apply custom CSS
-apply_custom_css()
+# ── CSS ──────────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+/* Hero banner */
+.hero-banner {
+    background: #3B2A1A;
+    border-radius: 12px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.hero-banner h1 {
+    color: #F5E6C8;
+    font-size: 2.4rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+.hero-banner p {
+    color: #C9A97A;
+    font-size: 1.1rem;
+}
 
-# Initialize session state
+/* Info cards */
+.info-card {
+    background: #FFFDF9;
+    border: 1px solid #E8D8C0;
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1rem;
+    color: #2C1A0E;
+}
+.info-card h3, .info-card h4 {
+    color: #5C3A1E;
+    margin-bottom: 0.5rem;
+}
+.info-card p, .info-card li {
+    color: #3D2410;
+    line-height: 1.7;
+}
+
+/* Feature grid */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.feature-card {
+    background: #FFFDF9;
+    border: 1px solid #E8D8C0;
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+}
+.feature-card .f-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.feature-card h4 { color: #5C3A1E; margin-bottom: 0.3rem; font-size: 1rem; }
+.feature-card p  { color: #3D2410; font-size: 0.9rem; line-height: 1.5; }
+
+/* Heritage class rows */
+.class-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #F0E0CC;
+}
+.class-row:last-child { border-bottom: none; }
+.class-icon { font-size: 1.8rem; width: 44px; text-align: center; }
+.class-name { color: #3B2A1A; font-weight: 600; font-size: 0.95rem; }
+.class-desc { color: #6B4C30; font-size: 0.85rem; margin-top: 2px; }
+
+/* Step list */
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 0.6rem 0;
+}
+.step-num {
+    background: #3B2A1A;
+    color: #F5E6C8;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.step-text strong { color: #3B2A1A; }
+.step-text span   { color: #6B4C30; font-size: 0.88rem; display: block; margin-top: 2px; }
+
+/* Section headings */
+.section-heading {
+    color: #3B2A1A;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 1.8rem 0 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #C9A97A;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    color: #9B7B5B;
+    padding: 2rem 0 1rem;
+    font-size: 0.9rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Session state ─────────────────────────────────────────────────────────────
 if 'detection_manager' not in st.session_state:
     try:
         st.session_state.detection_manager = DetectionManager()
     except Exception as e:
-        st.error("Model file (best.pt) not found. Please upload it.")
+        st.error("⚠️ Model file (best.pt) not found. Please add it to the project root.")
         st.stop()
 
 if 'detection_results' not in st.session_state:
@@ -35,156 +144,135 @@ if 'detection_results' not in st.session_state:
 if 'video_detection_active' not in st.session_state:
     st.session_state.video_detection_active = False
 
-# Main home page content
+# ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="main-header">
+<div class="hero-banner">
     <h1>🏛️ HeritageLens AI</h1>
-    <p>Discover Heritage Through AI</p>
+    <p>Discover and preserve cultural heritage through deep learning</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Introduction
+# ── Welcome ───────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-heading">🌟 Welcome</div>', unsafe_allow_html=True)
 st.markdown("""
 <div class="info-card">
-    <h3>🌟 Welcome to HeritageLens AI</h3>
-    <p>HeritageLens AI is an innovative application that uses cutting-edge YOLOv11 deep learning technology 
-    to automatically detect and analyze heritage sites, archaeological structures, and cultural landmarks 
-    in images and videos. Whether you're an archaeologist, historian, educator, or heritage enthusiast, 
-    our AI-powered tool helps you identify and understand cultural heritage with unprecedented accuracy.</p>
+    <p>HeritageLens AI uses <strong>YOLOv11</strong> deep learning to automatically detect and analyse
+    heritage sites, archaeological structures, and cultural landmarks in images and videos.
+    Whether you're an archaeologist, historian, or heritage enthusiast — our AI tool identifies
+    cultural heritage with high accuracy.</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Navigation instructions
-st.markdown("## 🚀 How to Use This App")
+# ── Features ──────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-heading">🎯 Key features</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="feature-grid">
+    <div class="feature-card">
+        <div class="f-icon">📸</div>
+        <h4>Image detection</h4>
+        <p>Upload photos and get bounding boxes with confidence scores instantly.</p>
+    </div>
+    <div class="feature-card">
+        <div class="f-icon">🎥</div>
+        <h4>Video analysis</h4>
+        <p>Analyse local videos or YouTube links with real-time frame detection.</p>
+    </div>
+    <div class="feature-card">
+        <div class="f-icon">📊</div>
+        <h4>Dashboard</h4>
+        <p>Interactive charts, class breakdowns, and downloadable PDF reports.</p>
+    </div>
+    <div class="feature-card">
+        <div class="f-icon">📚</div>
+        <h4>Learn</h4>
+        <p>Explore cultural significance, preservation tips, and AI explainers.</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
+# ── Heritage classes ───────────────────────────────────────────────────────────
+st.markdown('<div class="section-heading">🏺 Heritage classes detected</div>', unsafe_allow_html=True)
 st.markdown("""
 <div class="info-card">
-    <h4>📱 Navigation</h4>
-    <p>Use the sidebar on the left to navigate between different sections:</p>
-    <ul>
-        <li><strong>🏠 Home</strong> - This welcome page with app overview</li>
-        <li><strong>📸 Image Detection</strong> - Upload and analyze images for heritage objects</li>
-        <li><strong>🎥 Video Detection</strong> - Analyze videos or YouTube links with real-time detection</li>
-        <li><strong>📊 Summary Dashboard</strong> - View comprehensive analysis and statistics</li>
-        <li><strong>📚 Learn About Heritage</strong> - Educational content about heritage classes</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
-
-# Features section
-st.markdown("## 🎯 Key Features")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("""
-    <div class="info-card">
-        <h4>📸 Image Detection</h4>
-        <p>Upload single or multiple images to detect heritage objects with bounding boxes and confidence scores.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-card">
-        <h4>🎥 Video Analysis</h4>
-        <p>Analyze local videos or YouTube links with real-time detection and comprehensive summaries.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown("""
-    <div class="info-card">
-        <h4>📊 Interactive Dashboard</h4>
-        <p>View detailed statistics, charts, and visual summaries of your detection results.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-card">
-        <h4>📚 Educational Content</h4>
-        <p>Learn about different heritage classes and their cultural significance.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Detection classes
-st.markdown("## 🏺 Heritage Classes Detected")
-
-classes_data = [
-    {
-        "name": "Stones / Stone Pillars / Stone Structures",
-        "description": "Ancient stone constructions, pillars, and architectural elements",
-        "icon": "🗿"
-    },
-    {
-        "name": "Crops / Farmland",
-        "description": "Agricultural landscapes and farming areas",
-        "icon": "🌾"
-    },
-    {
-        "name": "Non-archaeological",
-        "description": "Natural landscapes like deserts, water bodies, and mountains",
-        "icon": "🏔️"
-    },
-    {
-        "name": "Heritage Sites",
-        "description": "Temples, palaces, forts, museums, and cultural monuments",
-        "icon": "🏛️"
-    }
-]
-
-for i, class_info in enumerate(classes_data):
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        st.markdown(f"<h2>{class_info['icon']}</h2>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="info-card">
-            <h4>{class_info['name']}</h4>
-            <p>{class_info['description']}</p>
+    <div class="class-row">
+        <div class="class-icon">🗿</div>
+        <div>
+            <div class="class-name">Stones / stone pillars / stone structures</div>
+            <div class="class-desc">Megaliths, temple pillars, ancient stone constructions and architectural elements</div>
         </div>
-        """, unsafe_allow_html=True)
-
-# Getting started
-st.markdown("## 🎯 Getting Started")
-
-st.markdown("""
-<div class="info-card">
-    <h4>Ready to explore heritage through AI?</h4>
-    <ol>
-        <li><strong>Image Detection:</strong> Navigate to the Image Detection page and upload your photos</li>
-        <li><strong>Video Analysis:</strong> Use the Video Detection page for local videos or YouTube links</li>
-        <li><strong>View Results:</strong> Check the Summary Dashboard for detailed analysis</li>
-        <li><strong>Learn More:</strong> Explore the Learn About Heritage section for educational content</li>
-    </ol>
+    </div>
+    <div class="class-row">
+        <div class="class-icon">🌾</div>
+        <div>
+            <div class="class-name">Crops / farmland</div>
+            <div class="class-desc">Agricultural landscapes, traditional farming areas and irrigation systems</div>
+        </div>
+    </div>
+    <div class="class-row">
+        <div class="class-icon">🏔️</div>
+        <div>
+            <div class="class-name">Non-archaeological</div>
+            <div class="class-desc">Natural formations — deserts, water bodies, mountains and geographical features</div>
+        </div>
+    </div>
+    <div class="class-row">
+        <div class="class-icon">🏛️</div>
+        <div>
+            <div class="class-name">Heritage sites</div>
+            <div class="class-desc">Temples, palaces, forts, museums and major cultural monuments</div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Technology section
-st.markdown("## 🔬 Technology")
-
+# ── Getting started ────────────────────────────────────────────────────────────
+st.markdown('<div class="section-heading">🚀 Getting started</div>', unsafe_allow_html=True)
 st.markdown("""
 <div class="info-card">
-    <h4>Powered by Advanced AI</h4>
-    <p>HeritageLens AI is built on YOLOv11 (You Only Look Once version 11), one of the most advanced 
-    real-time object detection models. Our custom-trained model has been specifically fine-tuned to 
-    recognize heritage sites and archaeological structures with high accuracy and confidence.</p>
+    <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Image Detection</strong>
+        <span>Navigate to the Image Detection page, upload your photos, and click Analyse.</span></div>
+    </div>
+    <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Video Detection</strong>
+        <span>Go to Video Detection, upload a local video file or paste a YouTube URL.</span></div>
+    </div>
+    <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Summary Dashboard</strong>
+        <span>View combined stats, interactive charts, and download a full PDF report.</span></div>
+    </div>
+    <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Learn About Heritage</strong>
+        <span>Explore each class's cultural significance and preservation best practices.</span></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-    <p><strong>Key Technologies:</strong></p>
-    <ul>
-        <li>YOLOv11 Deep Learning Model</li>
-        <li>PyTorch Framework</li>
-        <li>OpenCV for Image Processing</li>
-        <li>Streamlit for Interactive UI</li>
-        <li>Plotly for Data Visualization</li>
+# ── Technology ─────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-heading">🔬 Technology</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="info-card">
+    <h4>Powered by YOLOv11</h4>
+    <p>Our custom-trained model is fine-tuned specifically for heritage sites and archaeological
+    structures. Key technologies include:</p>
+    <ul style="margin-top: 0.6rem; padding-left: 1.4rem;">
+        <li>YOLOv11 deep learning model</li>
+        <li>PyTorch + Ultralytics framework</li>
+        <li>OpenCV for image processing</li>
+        <li>Streamlit for the interactive UI</li>
+        <li>Plotly for data visualisation</li>
     </ul>
 </div>
 """, unsafe_allow_html=True)
 
-# Footer
-st.markdown("---")
+# ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align: center; color: #666; padding: 2rem;">
-    <p>🏛️ HeritageLens AI - Preserving Heritage Through Technology</p>
-    <p>Built with ❤️ for archaeologists, historians, and heritage enthusiasts</p>
+<div class="footer">
+    🏛️ HeritageLens AI — preserving heritage through technology<br>
+    Built with ❤️ for archaeologists, historians, and heritage enthusiasts worldwide
 </div>
 """, unsafe_allow_html=True)
