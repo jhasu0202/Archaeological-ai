@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # Apply custom CSS
-from utils.ui_utils import apply_custom_css
+from ui_utils import apply_custom_css
 apply_custom_css()
 
 st.markdown("""

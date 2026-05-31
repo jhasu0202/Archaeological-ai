@@ -10,7 +10,7 @@ from pathlib import Path
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.ui_utils import create_detection_charts, create_summary_text, display_metrics, generate_pdf_report
+from ui_utils import create_detection_charts, create_summary_text, display_metrics, generate_pdf_report
 
 # Page configuration
 st.set_page_config(
@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # Apply custom CSS
-from utils.ui_utils import apply_custom_css
+from ui_utils import apply_custom_css
 apply_custom_css()
 
 st.markdown("""
