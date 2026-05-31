@@ -23,7 +23,11 @@ apply_custom_css()
 
 # Initialize session state
 if 'detection_manager' not in st.session_state:
-    st.session_state.detection_manager = DetectionManager()
+    try:
+        st.session_state.detection_manager = DetectionManager()
+    except Exception as e:
+        st.error("Model file (best.pt) not found. Please upload it.")
+        st.stop()
 
 if 'detection_results' not in st.session_state:
     st.session_state.detection_results = []
