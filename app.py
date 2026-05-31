@@ -6,9 +6,9 @@ from pathlib import Path
 # Add the current directory to Python path
 sys.path.append(str(Path(__file__).parent))
 
-# Import our modules
-from utils.detection_utils import DetectionManager
-from utils.ui_utils import apply_custom_css
+# ✅ FIXED: Files are in root, not inside utils/ folder
+from detection_utils import DetectionManager
+from ui_utils import apply_custom_css
 
 # Page configuration
 st.set_page_config(
@@ -79,7 +79,7 @@ with col1:
         <p>Upload single or multiple images to detect heritage objects with bounding boxes and confidence scores.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     st.markdown("""
     <div class="info-card">
         <h4>🎥 Video Analysis</h4>
@@ -94,7 +94,7 @@ with col2:
         <p>View detailed statistics, charts, and visual summaries of your detection results.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     st.markdown("""
     <div class="info-card">
         <h4>📚 Educational Content</h4>
@@ -112,7 +112,7 @@ classes_data = [
         "icon": "🗿"
     },
     {
-        "name": "Crops / Farmland", 
+        "name": "Crops / Farmland",
         "description": "Agricultural landscapes and farming areas",
         "icon": "🌾"
     },
@@ -164,7 +164,7 @@ st.markdown("""
     <p>HeritageLens AI is built on YOLOv11 (You Only Look Once version 11), one of the most advanced 
     real-time object detection models. Our custom-trained model has been specifically fine-tuned to 
     recognize heritage sites and archaeological structures with high accuracy and confidence.</p>
-    
+
     <p><strong>Key Technologies:</strong></p>
     <ul>
         <li>YOLOv11 Deep Learning Model</li>
