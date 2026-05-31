@@ -7,8 +7,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 # ✅ FIXED: Files are in root, not inside utils/ folder
-from detection_utils import DetectionManager
-from ui_utils import apply_custom_css
+from utils.detection_utils import DetectionManager
+from utils.ui_utils import apply_custom_css
 
 # Page configuration
 st.set_page_config(
